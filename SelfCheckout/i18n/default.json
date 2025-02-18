@@ -1,0 +1,4 @@
+{
+  "config-section.toggle-shops.description": "The below shops were automatically detected by the game's data. Enabling a shop does not necessarily mean it will be supported by this mod, but unchecking will disable it.",
+  "config-option.toggle-shop.tooltip": "Include shop for self checkout"
+}
