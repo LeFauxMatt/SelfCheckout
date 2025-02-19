@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<Import Project="..\FauxCore\FauxCommon\Common.targets" />
 	<Import Project="..\FauxCore\FauxCommon\FauxCommon.projitems" Label="Shared" />
@@ -6,7 +6,7 @@
 	<PropertyGroup>
 		<Name>Self Checkout</Name>
 		<Description>Self Checkout allows you to access shops without the owner being nearby.</Description>
-		<Version>1.0.0-beta.1</Version>
+		<Version>1.0.0-beta.3</Version>
 		<EnableHarmony>true</EnableHarmony>
 		<RootNamespace>LeFauxMods.SelfCheckout</RootNamespace>
 		<UniqueId>furyx639.SelfCheckout</UniqueId>
