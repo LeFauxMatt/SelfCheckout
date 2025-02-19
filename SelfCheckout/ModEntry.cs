@@ -1,4 +1,3 @@
-using System.Reflection;
 using HarmonyLib;
 using LeFauxMods.Common.Integrations.GenericModConfigMenu;
 using StardewModdingAPI.Events;
@@ -12,7 +11,6 @@ namespace LeFauxMods.SelfCheckout;
 public class ModEntry : Mod
 {
     private static readonly HashSet<string> ExcludedShops = new(StringComparer.OrdinalIgnoreCase);
-    private static MethodInfo? ShowBazaarMenu;
 
     private static Dictionary<string, List<Response>> Options => new(StringComparer.OrdinalIgnoreCase)
     {
@@ -104,31 +102,7 @@ public class ModEntry : Mod
             return;
         }
 
-        var modInfo = helper.ModRegistry.Get("mushymato.LivestockBazaar");
-        var mod = (IMod?)modInfo?.GetType().GetProperty("Mod")?.GetValue(modInfo);
-        if (mod is null)
-        {
-            return;
-        }
-
-        try
-        {
-            var modType = mod.GetType();
-            var bazaarMenu = modType.Assembly.GetType("LivestockBazaar.GUI.BazaarMenu");
-            ShowBazaarMenu = bazaarMenu?.GetMethod("ShowFor", BindingFlags.Static | BindingFlags.NonPublic);
-        }
-        catch
-        {
-            // ignored
-        }
-
-        if (ShowBazaarMenu is null)
-        {
-            return;
-        }
-
         this.Monitor.Log("Applying Patches for forced compatibility with Livestock Bazaar");
-
         _ = harmony.Patch(
             AccessTools.DeclaredMethod(typeof(GameLocation), nameof(GameLocation.ShowAnimalShopMenu)),
             new HarmonyMethod(typeof(ModEntry), nameof(GameLocation_ShowAnimalShopMenu_prefix)));
@@ -261,16 +235,9 @@ public class ModEntry : Mod
     private static void GameLocation_animalShop_postfix(GameLocation __instance, ref bool __result) =>
         __result = __result || TryOpenShop(Game1.shop_animalSupplies, __instance);
 
-    private static bool GameLocation_ShowAnimalShopMenu_prefix()
-    {
-        if (ShowBazaarMenu is null)
-        {
-            return true;
-        }
-
-        ShowBazaarMenu.Invoke(null, ["Marnie", null, null]);
-        return false;
-    }
+    private static bool GameLocation_ShowAnimalShopMenu_prefix(GameLocation __instance) =>
+        !__instance.performAction("mushymato.LivestockBazaar_Shop Marnie", Game1.player,
+            new Location((int)Game1.player.Tile.X, (int)Game1.player.Tile.Y));
 
     [SuppressMessage("ReSharper", "InconsistentNaming", Justification = "Harmony")]
     private static void GameLocation_blacksmith_postfix(GameLocation __instance, ref bool __result) =>
@@ -296,6 +263,8 @@ public class ModEntry : Mod
         }
 
         api.Register(this.ModManifest, Reset, Save);
+        api.AddParagraph(this.ModManifest, I18n.ConfigSection_ToggleShops_Description);
+
         var shops = DataLoader.Shops(Game1.content);
         foreach (var shop in shops.Keys)
         {
