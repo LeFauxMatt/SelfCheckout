@@ -2,6 +2,8 @@ namespace LeFauxMods.SelfCheckout;
 
 internal static class ModConstants
 {
+    public const string CharacterData = "Data/Characters";
+
     public const string EnabledKey = ModId + "/Enabled";
 
     public const string HeartsKey = ModId + "/Hearts";

@@ -1,4 +1,4 @@
-﻿using LeFauxMods.Common.Services;
+using LeFauxMods.Common.Services;
 using LeFauxMods.Common.Utilities;
 using StardewModdingAPI.Events;
 using StardewValley.GameData.Shops;
@@ -77,21 +77,45 @@ internal sealed class ModState
 
     public static bool TryOpenShop(string shopId, GameLocation location)
     {
-        if (Config.ExcludedShops.Contains(shopId) ||
-            !Data.TryGetValue(shopId, out var shopData) ||
+        if (!Data.TryGetValue(shopId, out var shopData) ||
             shopData.CustomFields is null ||
             !shopData.CustomFields.ContainsKey(ModConstants.EnabledKey))
         {
             return false;
         }
 
-        if (shopData.CustomFields.TryGetValue(ModConstants.OwnerKey, out var ownerName))
+        var heartsRequired = shopData.CustomFields.GetInt(ModConstants.HeartsKey);
+        if (heartsRequired > 0)
         {
-            var heartLevel = Game1.player.getFriendshipHeartLevelForNPC(ownerName);
-            var heartsRequired = shopData.CustomFields.GetInt(ModConstants.HeartsKey);
-            if (heartLevel < heartsRequired)
+            if (!shopData.CustomFields.TryGetValue(ModConstants.OwnerKey, out var ownerNames) ||
+                string.IsNullOrWhiteSpace(ownerNames))
             {
-                return false;
+                Log.Info("Hearts required is {0} but no social owners are associated with shop {1}", heartsRequired,
+                    shopId);
+            }
+            else
+            {
+                var owners = ownerNames.Split(',')
+                    .ToDictionary(static ownerName => ownerName, Game1.player.getFriendshipHeartLevelForNPC);
+
+                var foundOwner = false;
+                foreach (var (ownerName, heartLevel) in owners)
+                {
+                    if (heartLevel < heartsRequired)
+                    {
+                        continue;
+                    }
+
+                    Log.Info("Found owner {0} with heart level {1} >= {2}", ownerName, heartLevel, heartsRequired);
+                    foundOwner = true;
+                    break;
+                }
+
+                if (!foundOwner)
+                {
+                    Log.Info("No owner found with required heart level from: {0}", owners);
+                    return false;
+                }
             }
         }
 

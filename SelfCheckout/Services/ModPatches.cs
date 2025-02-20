@@ -109,6 +109,23 @@ internal static class ModPatches
                    ModState.TryOpenShop(Game1.shop_carpenter, __instance);
 
     [SuppressMessage("ReSharper", "RedundantAssignment", Justification = "Harmony")]
-    private static void Utility_TryOpenShopMenu_prefix(string shopId, ref bool forceOpen) =>
-        forceOpen = !ModState.Config.ExcludedShops.Contains(shopId);
+    private static void Utility_TryOpenShopMenu_prefix(string shopId, ref bool forceOpen)
+    {
+        if (forceOpen ||
+            !ModState.Data.TryGetValue(shopId, out var shopData) ||
+            shopData.CustomFields is null ||
+            !shopData.CustomFields.ContainsKey(ModConstants.EnabledKey))
+        {
+            return;
+        }
+
+        var heartsRequired = shopData.CustomFields.GetInt(ModConstants.HeartsKey);
+        if (shopData.CustomFields.TryGetValue(ModConstants.OwnerKey, out var ownerNames) &&
+            !string.IsNullOrWhiteSpace(ownerNames) &&
+            ownerNames.Split(',').Select(Game1.player.getFriendshipHeartLevelForNPC)
+                .Any(heartLevel => heartLevel >= heartsRequired))
+        {
+            forceOpen = true;
+        }
+    }
 }

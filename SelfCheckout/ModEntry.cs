@@ -9,8 +9,6 @@ namespace LeFauxMods.SelfCheckout;
 /// <inheritdoc />
 public class ModEntry : Mod
 {
-    private static readonly HashSet<string> ExcludedShops = new(StringComparer.OrdinalIgnoreCase);
-
     /// <inheritdoc />
     public override void Entry(IModHelper helper)
     {
@@ -45,23 +43,28 @@ public class ModEntry : Mod
                     shopData.CustomFields ??= [];
                     shopData.CustomFields[ModConstants.EnabledKey] = "true";
 
-                    if (ModState.Config.HeartLevel == 0)
+                    if (ModState.Config.HeartLevel == 0 || shopData.Owners is null)
                     {
                         continue;
                     }
 
-                    foreach (var ownerData in shopData.Owners)
-                    {
-                        if (!Game1.characterData.TryGetValue(ownerData.Name, out var characterData) ||
-                            characterData.CanSocialize == "FALSE")
-                        {
-                            continue;
-                        }
+                    HashSet<string> owners =
+                    [
+                        ..shopData.Owners
+                            .Where(static ownerData =>
+                                ownerData.Type is ShopOwnerType.NamedNpc &&
+                                Game1.characterData.TryGetValue(ownerData.Name, out var characterData) &&
+                                characterData.CanSocialize != "FALSE")
+                            .Select(static ownerData => ownerData.Name)
+                    ];
 
-                        shopData.CustomFields[ModConstants.OwnerKey] = ownerData.Name;
-                        shopData.CustomFields[ModConstants.HeartsKey] = $"{ModState.Config.HeartLevel}";
-                        break;
+                    if (!owners.Any())
+                    {
+                        continue;
                     }
+
+                    _ = shopData.CustomFields.TryAdd(ModConstants.OwnerKey, string.Join(',', owners));
+                    _ = shopData.CustomFields.TryAdd(ModConstants.HeartsKey, $"{ModState.Config.HeartLevel}");
                 }
             },
             AssetEditPriority.Late);
