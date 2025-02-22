@@ -12,7 +12,7 @@ internal static class ModPatches
 
     public static void Apply()
     {
-        Log.Info("Applying Patches");
+        Log.Trace("Applying Patches");
 
         try
         {
@@ -43,21 +43,18 @@ internal static class ModPatches
                     typeof(Action<string>)
                 ]),
                 new HarmonyMethod(typeof(ModPatches), nameof(Utility_TryOpenShopMenu_prefix)));
+
+            if (ModState.IsLivestockBazaarLoaded)
+            {
+                _ = Harmony.Patch(
+                    AccessTools.DeclaredMethod(typeof(GameLocation), nameof(GameLocation.ShowAnimalShopMenu)),
+                    new HarmonyMethod(typeof(ModPatches), nameof(GameLocation_ShowAnimalShopMenu_prefix)));
+            }
         }
         catch
         {
             Log.Warn("Failed to apply patches");
         }
-
-        if (!ModState.IsLivestockBazaarLoaded)
-        {
-            return;
-        }
-
-        Log.Info("Applying Patches for Livestock Bazaar compatibility");
-        _ = Harmony.Patch(
-            AccessTools.DeclaredMethod(typeof(GameLocation), nameof(GameLocation.ShowAnimalShopMenu)),
-            new HarmonyMethod(typeof(ModPatches), nameof(GameLocation_ShowAnimalShopMenu_prefix)));
     }
 
     [SuppressMessage("ReSharper", "InconsistentNaming", Justification = "Harmony")]
@@ -92,40 +89,23 @@ internal static class ModPatches
     [SuppressMessage("ReSharper", "InconsistentNaming", Justification = "Harmony")]
     private static void GameLocation_animalShop_postfix(GameLocation __instance, ref bool __result) =>
         __result = (__result && !Game1.shortDayNameFromDayOfSeason(Game1.dayOfMonth).Equals("Tue")) ||
-                   ModState.TryOpenShop(Game1.shop_animalSupplies, __instance);
+                   ModState.TryOpenShop(Game1.shop_animalSupplies, __instance, "Marnie");
 
     [SuppressMessage("ReSharper", "InconsistentNaming", Justification = "Harmony")]
     private static bool GameLocation_ShowAnimalShopMenu_prefix(GameLocation __instance) =>
-        !__instance.performAction(ModConstants.LivestockBazaarId + "_Shop Marnie", Game1.player,
+        !__instance.performAction(ModConstants.Mods.LivestockBazaar + "_Shop Marnie", Game1.player,
             new Location((int)Game1.player.Tile.X, (int)Game1.player.Tile.Y));
 
     [SuppressMessage("ReSharper", "InconsistentNaming", Justification = "Harmony")]
     private static void GameLocation_blacksmith_postfix(GameLocation __instance, ref bool __result) =>
-        __result = __result || ModState.TryOpenShop(Game1.shop_blacksmith, __instance);
+        __result = __result || ModState.TryOpenShop(Game1.shop_blacksmith, __instance, "Clint");
 
     [SuppressMessage("ReSharper", "InconsistentNaming", Justification = "Harmony")]
     private static void GameLocation_carpenters_postfix(GameLocation __instance, ref bool __result) =>
         __result = (__result && !Game1.shortDayNameFromDayOfSeason(Game1.dayOfMonth).Equals("Tue")) ||
-                   ModState.TryOpenShop(Game1.shop_carpenter, __instance);
+                   ModState.TryOpenShop(Game1.shop_carpenter, __instance, "Robin");
 
     [SuppressMessage("ReSharper", "RedundantAssignment", Justification = "Harmony")]
-    private static void Utility_TryOpenShopMenu_prefix(string shopId, ref bool forceOpen)
-    {
-        if (forceOpen ||
-            !ModState.Data.TryGetValue(shopId, out var shopData) ||
-            shopData.CustomFields is null ||
-            !shopData.CustomFields.ContainsKey(ModConstants.EnabledKey))
-        {
-            return;
-        }
-
-        var heartsRequired = shopData.CustomFields.GetInt(ModConstants.HeartsKey);
-        if (shopData.CustomFields.TryGetValue(ModConstants.OwnerKey, out var ownerNames) &&
-            !string.IsNullOrWhiteSpace(ownerNames) &&
-            ownerNames.Split(',').Select(Game1.player.getFriendshipHeartLevelForNPC)
-                .Any(heartLevel => heartLevel >= heartsRequired))
-        {
-            forceOpen = true;
-        }
-    }
+    private static void Utility_TryOpenShopMenu_prefix(string shopId, ref bool forceOpen) =>
+        forceOpen |= ModState.CanOpenShop(shopId, null);
 }

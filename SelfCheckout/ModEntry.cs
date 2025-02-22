@@ -25,7 +25,7 @@ public class ModEntry : Mod
 
     private static void OnAssetRequested(object? sender, AssetRequestedEventArgs e)
     {
-        if (!e.NameWithoutLocale.IsEquivalentTo(ModConstants.ShopData))
+        if (!e.NameWithoutLocale.IsEquivalentTo(ModConstants.DataPath.Shops))
         {
             return;
         }
@@ -41,35 +41,17 @@ public class ModEntry : Mod
                     }
 
                     shopData.CustomFields ??= [];
-                    shopData.CustomFields[ModConstants.EnabledKey] = "true";
+                    shopData.CustomFields[ModConstants.Keys.Enabled] = "true";
 
-                    if (ModState.Config.HeartLevel == 0 || shopData.Owners is null)
+                    if (ModState.Config.HeartLevel > 0 && shopData.Owners is not null)
                     {
-                        continue;
+                        _ = shopData.CustomFields.TryAdd(ModConstants.Keys.Hearts, $"{ModState.Config.HeartLevel}");
                     }
-
-                    HashSet<string> owners =
-                    [
-                        ..shopData.Owners
-                            .Where(static ownerData =>
-                                ownerData.Type is ShopOwnerType.NamedNpc &&
-                                Game1.characterData.TryGetValue(ownerData.Name, out var characterData) &&
-                                characterData.CanSocialize != "FALSE")
-                            .Select(static ownerData => ownerData.Name)
-                    ];
-
-                    if (!owners.Any())
-                    {
-                        continue;
-                    }
-
-                    _ = shopData.CustomFields.TryAdd(ModConstants.OwnerKey, string.Join(',', owners));
-                    _ = shopData.CustomFields.TryAdd(ModConstants.HeartsKey, $"{ModState.Config.HeartLevel}");
                 }
             },
             AssetEditPriority.Late);
     }
 
     private void OnConfigChanged(ConfigChangedEventArgs<ModConfig> e) =>
-        this.Helper.GameContent.InvalidateCache("Data/Shops");
+        this.Helper.GameContent.InvalidateCache(ModConstants.DataPath.Shops);
 }

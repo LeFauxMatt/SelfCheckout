@@ -6,7 +6,7 @@
 	<PropertyGroup>
 		<Name>Self Checkout</Name>
 		<Description>Self Checkout allows you to access shops without the owner being nearby.</Description>
-		<Version>1.0.0</Version>
+		<Version>1.0.1</Version>
 		<EnableHarmony>true</EnableHarmony>
 		<RootNamespace>LeFauxMods.SelfCheckout</RootNamespace>
 		<UniqueId>furyx639.SelfCheckout</UniqueId>

@@ -1,4 +1,4 @@
-﻿using LeFauxMods.Common.Services;
+using LeFauxMods.Common.Services;
 
 namespace LeFauxMods.SelfCheckout.Services;
 
@@ -15,6 +15,13 @@ internal sealed class ConfigMenu(IModHelper helper, IManifest manifest)
     /// <inheritdoc />
     protected internal override void SetupOptions()
     {
+        this.Api.AddKeybindList(
+            this.Manifest,
+            () => this.Config.ForceOpen,
+            value => this.Config.ForceOpen = value,
+            I18n.ConfigOption_ForceOpen_Name,
+            I18n.ConfigOption_ForceOpen_Tooltip);
+
         this.Api.AddNumberOption(
             this.Manifest,
             () => this.Config.HeartLevel,

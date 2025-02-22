@@ -48,4 +48,4 @@ Expanded, Ridgeside Village, and Easte Scarpe!
 | Portuguese | [❌️](SelfCheckout/i18n/pt.json) |
 | Russian    | [❌️](SelfCheckout/i18n/ru.json) |
 | Spanish    | [❌️](SelfCheckout/i18n/es.json) |
-| Turkish    | [❌️](SelfCheckout/i18n/tr.json) |
+| Turkish    | [❔](SelfCheckout/i18n/tr.json) |

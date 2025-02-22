@@ -1,0 +1,8 @@
+{
+  "config-section.toggle-shops.description": "Aşağıdaki dükkanlar oyun verileri tarafından otomatik olarak tespit edilmiştir. Bir dükkanın etkinleştirilmesi, bu mod tarafından destekleneceği anlamına gelmez, ancak kutucuğun içindeki işaretinin kaldırılması devre dışı bırakılacağı anlamına gelir.",
+  "config-option.force-open.name": "Force Open",
+  "config-option.force-open.tooltip": "Set a keybind that when held down will force a shop to open regardless of heart level or if has been enabled.",
+  "config-option.heart-level.name": "Kalp Seviyesi Gerektirir",
+  "config-option.heart-level.tooltip": "Kendi kendine ödeme sistemi için mağaza sahibi ile minimum kalp seviyesi gerektir (devre dışı bırakmak için 0 olarak ayarlayın).",
+  "config-option.toggle-shop.tooltip": "Kendi kendine ödeme sistemi için mağazayı dahil edin"
+}
