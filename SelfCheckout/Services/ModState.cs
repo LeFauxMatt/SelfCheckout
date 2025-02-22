@@ -2,6 +2,7 @@ using LeFauxMods.Common.Services;
 using LeFauxMods.Common.Utilities;
 using StardewModdingAPI.Events;
 using StardewValley.GameData.Shops;
+using StardewValley.Internal;
 using StardewValley.Locations;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
@@ -32,7 +33,8 @@ internal sealed class ModState
 
     public static ConfigHelper<ModConfig> ConfigHelper => Instance!.configHelper;
 
-    public static bool IsLivestockBazaarLoaded => Instance!.helper.ModRegistry.IsLoaded(ModConstants.LivestockBazaarId);
+    public static bool IsLivestockBazaarLoaded =>
+        Instance!.helper.ModRegistry.IsLoaded(ModConstants.Mods.LivestockBazaar);
 
     public static Dictionary<string, ShopData> Data => Instance!.data ??= DataLoader.Shops(Game1.content);
 
@@ -75,48 +77,60 @@ internal sealed class ModState
 
     public static void Init(IModHelper helper, IManifest manifest) => Instance ??= new ModState(helper, manifest);
 
-    public static bool TryOpenShop(string shopId, GameLocation location)
+    public static bool CanOpenShop(string shopId, string? ownerName)
     {
+        if (Config.ForceOpen.IsDown())
+        {
+            return true;
+        }
+
         if (!Data.TryGetValue(shopId, out var shopData) ||
             shopData.CustomFields is null ||
-            !shopData.CustomFields.ContainsKey(ModConstants.EnabledKey))
+            !shopData.CustomFields.ContainsKey(ModConstants.Keys.Enabled))
         {
+            Log.Trace(ModConstants.LogMessage.ShopExcluded, shopId);
             return false;
         }
 
-        var heartsRequired = shopData.CustomFields.GetInt(ModConstants.HeartsKey);
-        if (heartsRequired > 0)
+        var heartsRequired = shopData.CustomFields.GetInt(ModConstants.Keys.Hearts);
+        if (heartsRequired <= 0)
         {
-            if (!shopData.CustomFields.TryGetValue(ModConstants.OwnerKey, out var ownerNames) ||
-                string.IsNullOrWhiteSpace(ownerNames))
-            {
-                Log.Info("Hearts required is {0} but no social owners are associated with shop {1}", heartsRequired,
-                    shopId);
-            }
-            else
-            {
-                var owners = ownerNames.Split(',')
-                    .ToDictionary(static ownerName => ownerName, Game1.player.getFriendshipHeartLevelForNPC);
+            return true;
+        }
 
-                var foundOwner = false;
-                foreach (var (ownerName, heartLevel) in owners)
-                {
-                    if (heartLevel < heartsRequired)
-                    {
-                        continue;
-                    }
+        var ownerData = ShopBuilder.GetCurrentOwners(shopData)
+            .FirstOrDefault(p =>
+                p.Type is ShopOwnerType.NamedNpc && (string.IsNullOrWhiteSpace(ownerName) || p.IsValid(ownerName)));
 
-                    Log.Info("Found owner {0} with heart level {1} >= {2}", ownerName, heartLevel, heartsRequired);
-                    foundOwner = true;
-                    break;
-                }
+        if (ownerData is null)
+        {
+            Log.Info(ModConstants.LogMessage.NoOwnerFound, heartsRequired, shopId);
+            return true;
+        }
 
-                if (!foundOwner)
-                {
-                    Log.Info("No owner found with required heart level from: {0}", owners);
-                    return false;
-                }
-            }
+        var owner = Game1.getCharacterFromName(ownerData.Name);
+        var heartLevel = Game1.player.getFriendshipHeartLevelForNPC(owner.Name);
+        if (!owner.CanSocialize && heartLevel == 0)
+        {
+            Log.Info(ModConstants.LogMessage.NonSocialOwner, heartsRequired, owner.Name, shopId);
+            return false;
+        }
+
+        if (heartLevel < heartsRequired)
+        {
+            Log.Info(ModConstants.LogMessage.HeartLevelLow, heartsRequired, heartLevel, owner.Name, shopId);
+            return false;
+        }
+
+        Log.Trace(ModConstants.LogMessage.HeartLevelMet, heartsRequired, heartLevel, owner.Name, shopId);
+        return true;
+    }
+
+    public static bool TryOpenShop(string shopId, GameLocation location, string? ownerName = null)
+    {
+        if (!CanOpenShop(shopId, ownerName))
+        {
+            return false;
         }
 
         if (!Options.TryGetValue(shopId, out var list))
@@ -211,7 +225,7 @@ internal sealed class ModState
 
     private void OnAssetsInvalidated(object? sender, AssetsInvalidatedEventArgs e)
     {
-        if (!e.NamesWithoutLocale.Any(static assetName => assetName.IsEquivalentTo(ModConstants.ShopData)))
+        if (!e.NamesWithoutLocale.Any(static assetName => assetName.IsEquivalentTo(ModConstants.DataPath.Shops)))
         {
             return;
         }

@@ -1,5 +1,7 @@
 {
   "config-section.toggle-shops.description": "The below shops were automatically detected by the game's data. Enabling a shop does not necessarily mean it will be supported by this mod, but unchecking will disable it.",
+  "config-option.force-open.name": "Force Open",
+  "config-option.force-open.tooltip": "Set a keybind that when held down will force a shop to open regardless of heart level or if has been enabled.",
   "config-option.heart-level.name": "Require Heart Level",
   "config-option.heart-level.tooltip": "Require a minimum heart level with the shop owner for self-checkout (set to 0 to disable).",
   "config-option.toggle-shop.tooltip": "Include shop for self checkout"
